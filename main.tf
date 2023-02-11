@@ -1,4 +1,4 @@
- ## VPC
+ /* ## VPC
 resource "aws_vpc" "temp_vpc" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
@@ -278,4 +278,4 @@ resource "aws_autoscaling_attachment" "asg_attachment_bar" {
 
 output "alb_dns_name" {
   value = aws_lb.ec2-elb.dns_name
-} 
+} */
