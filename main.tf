@@ -205,3 +205,77 @@ resource "aws_security_group" "ec2_sg" {
     Name = "Allow Traffic for EC2"
   }
 }
+
+## Launch Config
+resource "aws_launch_configuration" "as_conf" {
+  name_prefix                 = "terraform-lc-example"
+  security_groups             = [aws_security_group.ec2_sg.id]
+  #key_name                    = "aws-key"
+  image_id                    = "ami-03ededff12e34e59e"
+  instance_type               = "t2.micro"
+  associate_public_ip_address = true
+  user_data                   = file("userdata.sh")
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+## Auto Scaling Group
+resource "aws_autoscaling_group" "bar" {
+  name                 = "terraform-asg-example"
+  vpc_zone_identifier  = [aws_subnet.private-subnet-first.id, aws_subnet.private-subnet-second.id]
+  launch_configuration = aws_launch_configuration.as_conf.name
+  desired_capacity     = 2
+  min_size             = 1
+  max_size             = 4
+  lifecycle {
+    create_before_destroy = true
+  }
+  tag {
+    key                 = "Name"
+    value               = "web-server"
+    propagate_at_launch = true
+  }
+}
+
+## Load Balancer
+resource "aws_lb" "ec2-elb" {
+  name               = "ec2-elb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb_sg.id]
+  subnets            = [aws_subnet.public-subnet-first.id, aws_subnet.public-subnet-second.id]
+  tags = {
+    Name = "EC2 Load Balancer"
+  }
+}
+
+## Target Group
+resource "aws_lb_target_group" "alb-target-group" {
+  name     = "tf-example-lb-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.temp_vpc.id
+
+}
+
+## ELB listener
+resource "aws_lb_listener" "front_end" {
+  load_balancer_arn = aws_lb.ec2-elb.arn
+  port              = "80"
+  protocol          = "HTTP"
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.alb-target-group.arn
+  }
+}
+
+## Create a new load balancer attachment
+resource "aws_autoscaling_attachment" "asg_attachment_bar" {
+  autoscaling_group_name = aws_autoscaling_group.bar.id
+  alb_target_group_arn   = aws_lb_target_group.alb-target-group.arn
+}
+
+output "alb_dns_name" {
+  value = aws_lb.ec2-elb.dns_name
+}
