@@ -1,4 +1,4 @@
-/* ## VPC
+ ## VPC
 resource "aws_vpc" "temp_vpc" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
@@ -225,9 +225,9 @@ resource "aws_autoscaling_group" "bar" {
   name                 = "terraform-asg-example"
   vpc_zone_identifier  = [aws_subnet.private-subnet-first.id, aws_subnet.private-subnet-second.id]
   launch_configuration = aws_launch_configuration.as_conf.name
-  desired_capacity     = 2
-  min_size             = 1
-  max_size             = 4
+  desired_capacity     = 4
+  min_size             = 2
+  max_size             = 6
   lifecycle {
     create_before_destroy = true
   }
@@ -278,4 +278,4 @@ resource "aws_autoscaling_attachment" "asg_attachment_bar" {
 
 output "alb_dns_name" {
   value = aws_lb.ec2-elb.dns_name
-} */
+} 
